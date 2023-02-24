@@ -1,0 +1,146 @@
+---
+title: "Capstone_final_project"
+author: "Tom Matsuno"
+date: "2023-02-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/ドキュメント/Coursera勉強/Johns_Hopkins DATA SCIENCE/Data_Science_Capstone/")
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+### Load data
+```{r Load data}
+blogs_file_name <- "final/en_US/en_US.blogs.txt"
+con <- file(blogs_file_name, open="r")
+blogs <- readLines(con, encoding="UTF-8", skipNul=T)
+close(con)
+
+news_file_name <- "final/en_US/en_US.news.txt"
+con <- file(news_file_name, open="r")
+news <- readLines(con, encoding="UTF-8", skipNul=T)
+close(con)
+
+twitter_file_name <- "final/en_US/en_US.twitter.txt"
+con <- file(twitter_file_name, open="r")
+twitter <- readLines(con, encoding="UTF-8", skipNul=T)
+close(con)
+
+```
+
+### Sampling data and make corpus
+```{r}
+sample_size <- 5000
+sample_blogs <- sample(blogs, size=sample_size)
+sample_news <- sample(news, size=sample_size)
+sample_twitter <- sample(twitter, size=sample_size)
+
+my_sample <- c(sample_blogs, sample_news, sample_twitter)
+```
+
+### Build and clean corpus
+```{r}
+library(quanteda)
+library(quanteda.textstats)
+library(tokenizers)
+library(tm)
+library(dplyr)
+library(tidytext)
+library(tidyr)
+library(NLP)
+
+my_tokens <- tokens(my_sample, remove_numbers = TRUE, remove_punct = TRUE,
+                           remove_symbols = TRUE, remove_separators = TRUE,
+                           remove_url = TRUE)
+
+#change_url <- function(x) gsub("http[^[:space:]]*", "", x)
+#my_corpus <- tm_map(my_corpus, content_transformer(change_url))
+#change_reg <- function(x) gsub("[^[:alpha:][:space:]]*", "", x)
+#my_corpus <- tm_map(my_corpus, content_transformer(change_reg))
+
+gc(T,T)
+
+doc_tokens <- tokens_select(my_tokens,
+                            stopwords('english'),
+                            selection = 'remove')
+
+doc_tokens <- tokens_wordstem(doc_tokens)
+doc_tokens <- tokens_tolower(doc_tokens)
+
+saveRDS(doc_tokens, file="doc_tokens.RData")
+```
+
+### Building unigrams to 5 grams
+```{r}
+my_ngram1 <- tokens_ngrams(doc_tokens, n = 1)
+my_ngram2 <- tokens_ngrams(doc_tokens, n = 2)
+my_ngram3 <- tokens_ngrams(doc_tokens, n = 3)
+my_ngram4 <- tokens_ngrams(doc_tokens, n = 4)
+my_ngram5 <- tokens_ngrams(doc_tokens, n = 5)
+
+saveRDS(my_ngram1, file="my_ngram1.RData")
+saveRDS(my_ngram2, file="my_ngram2.RData")
+saveRDS(my_ngram3, file="my_ngram3.RData")
+saveRDS(my_ngram4, file="my_ngram4.RData")
+saveRDS(my_ngram5, file="my_ngram5.RData")
+```
+
+
+#### one word prediction
+```{r}
+find_next <- "thing"
+doc_kwic <- kwic(my_ngram2, pattern=find_next, window=1,valuetype="regex")
+doc_dfm <- dfm(tokens(doc_kwic$post))
+doc_top <- topfeatures(doc_dfm, n=5, decreasing=T)
+doc_table <- data.frame(doc_top)
+doc_name <- row.names(doc_table)
+only_top <- str_split(doc_name, pattern = "_")
+only_top <- only_top[[1]][2]
+only_top
+```
+
+#### two word prediction
+```{r}
+library(stringr)
+first_word <- "born"
+second_word <- "late"
+join_word <- paste0(first_word, "_", second_word)
+doc_kwic <- kwic(my_ngram3, pattern=join_word, window=1,valuetype="regex")
+doc_dfm <- dfm(tokens(doc_kwic$post))
+doc_top <- topfeatures(doc_dfm, n=5, decreasing=T)
+doc_table <- data.frame(doc_top)
+doc_name <- row.names(doc_table)
+only_top <- str_split(doc_name, pattern = "_")
+only_top <- only_top[[1]][3]
+only_top
+```
+
+#### three word prediction
+```{r}
+library(stringr)
+first_word <- "born"
+second_word <- "late"
+third_word <- "80s"
+join_word <- paste0(first_word, "_", second_word, "_", third_word)
+doc_kwic <- kwic(my_ngram4, pattern=join_word, window=1,valuetype="regex")
+doc_dfm <- dfm(tokens(doc_kwic$post))
+doc_top <- topfeatures(doc_dfm, n=5, decreasing=T)
+doc_table <- data.frame(doc_top)
+doc_name <- row.names(doc_table)
+only_top <- str_split(doc_name, pattern = "_")
+only_top <- only_top[[1]][4]
+only_top
+```
+
+
+
+
+
+
+
+
+
+
+
